@@ -13,6 +13,7 @@ import okhttp3.Response;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class WeatherResponse {
@@ -53,12 +54,23 @@ public class WeatherResponse {
                     .build();
 
             Response response = client.newCall(request).execute();
-            System.out.println(response.body().string());
+            //System.out.println(response.body().string());
+            String jsonResponse = response.body().string();
+
+            // Реализовать вывод погоды на 1 день в формате
+            //| В городе CITY на дату DATE ожидается WEATHER_TEXT, температура - TEMPERATURE |
+
+            String dateValue= objectMapper
+                    .readTree(jsonResponse).at("/Headline/EffectiveDate").asText().split("T")[0];
+            String textValue = objectMapper
+                    .readTree(jsonResponse).at("/DailyForecasts").get(0).at("/Day/IconPhrase").asText();
+            JsonNode tempValue = objectMapper
+                    .readTree(jsonResponse).at("/DailyForecasts").get(0).at("/Temperature/Maximum/Value");
+
+            System.out.println("В городе " + city + " на дату " + dateValue +
+                    " ожидается " + textValue + ", температура: " + tempValue);
 
 
-            // TODO: Сделать в рамках д/з вывод более приятным для пользователя.
-            //  Создать класс WeatherResponse, десериализовать ответ сервера в экземпляр класса
-            //  Вывести пользователю только текущую температуру в C и сообщение (weather text)
         }
         if (period.equals("5")) {
             HttpUrl url = new HttpUrl.Builder()
@@ -80,12 +92,37 @@ public class WeatherResponse {
                     .build();
 
             Response response = client.newCall(request).execute();
-            System.out.println(response.body().string());
+            //System.out.println(response.body().string());
+            String jsonResponse = response.body().string();
 
 
-            // TODO: Сделать в рамках д/з вывод более приятным для пользователя.
-            //  Создать класс WeatherResponse, десериализовать ответ сервера в экземпляр класса
-            //  Вывести пользователю только текущую температуру в C и сообщение (weather text)
+            // Реализовать вывод погоды на следующие 5 дней в формате
+            //| В городе CITY на дату DATE ожидается WEATHER_TEXT, температура - TEMPERATURE |
+
+            String dateValue= objectMapper
+                    .readTree(jsonResponse).at("/Headline/EffectiveDate").asText().split("T")[0];
+            String textValue = objectMapper
+                    .readTree(jsonResponse).at("/DailyForecasts").get(0).at("/Day/IconPhrase").asText();
+            JsonNode tempValue = objectMapper
+                    .readTree(jsonResponse).at("/DailyForecasts").get(0).at("/Temperature/Maximum/Value");
+
+            String[] dateValues = new String[5];
+            String[] textValues = new String[5];
+            String[] tempValues = new String[5];
+            for (int i = 0; i < 5; i++){
+                dateValues[i] = objectMapper.readTree(jsonResponse)
+                        .at("/DailyForecasts").get(i).at("/Date").asText().split("T")[0];
+                textValues[i] = objectMapper.readTree(jsonResponse)
+                        .at("/DailyForecasts").get(i).at("/Day/IconPhrase").asText();
+                tempValues[i] = objectMapper.readTree(jsonResponse)
+                        .at("/DailyForecasts").get(i).at("/Temperature/Maximum/Value").asText();
+            }
+
+            for (int i = 0; i < 5; i++){
+                System.out.println("В городе " + city + " на дату " + dateValues[i] +
+                        " ожидается " + textValues[i] + ", температура: " + tempValues[i]);
+            }
+
         }
     }
 
@@ -113,7 +150,7 @@ public class WeatherResponse {
                     "Код ответа сервера = " + response.code() + " тело ответа = " + response.body().string());
         }
         String jsonResponse = response.body().string();
-        System.out.println("Произвожу поиск города " + city);
+        //System.out.println("Произвожу поиск города " + city);
 
         if (objectMapper.readTree(jsonResponse).size() > 0) {
             String cityName = objectMapper.readTree(jsonResponse).get(0).at("/LocalizedName").asText();
