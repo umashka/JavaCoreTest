@@ -1,5 +1,6 @@
 package Lesson6.HomeWork;
 
+import Lesson8.project.ApplicationGlobalState;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -13,6 +14,7 @@ import okhttp3.Response;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -32,8 +34,9 @@ public class WeatherResponse {
     private final OkHttpClient client = new OkHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public void getWeather(String city, String period) throws IOException {
+    public List<WeatherData> getWeather(String city, String period) throws IOException {
         String cityKey = detectCityKey(city);
+        List<WeatherData> result = null;
         if (period.equals("1")) {
             HttpUrl url = new HttpUrl.Builder()
                     .scheme("http")
@@ -67,8 +70,14 @@ public class WeatherResponse {
             JsonNode tempValue = objectMapper
                     .readTree(jsonResponse).at("/DailyForecasts").get(0).at("/Temperature/Maximum/Value");
 
-            System.out.println("В городе " + city + " на дату " + dateValue +
-                    " ожидается " + textValue + ", температура: " + tempValue);
+            //System.out.println("В городе " + city + " на дату " + dateValue +
+            //        " ожидается " + textValue + ", температура: " + tempValue);
+            result = new ArrayList<WeatherData>();
+            result.add(new WeatherData(
+                    city,
+                    dateValue,
+                    textValue,
+                    tempValue.asDouble()));
 
 
         }
@@ -109,6 +118,9 @@ public class WeatherResponse {
             String[] dateValues = new String[5];
             String[] textValues = new String[5];
             String[] tempValues = new String[5];
+
+            result = new ArrayList<WeatherData>();
+
             for (int i = 0; i < 5; i++){
                 dateValues[i] = objectMapper.readTree(jsonResponse)
                         .at("/DailyForecasts").get(i).at("/Date").asText().split("T")[0];
@@ -116,14 +128,14 @@ public class WeatherResponse {
                         .at("/DailyForecasts").get(i).at("/Day/IconPhrase").asText();
                 tempValues[i] = objectMapper.readTree(jsonResponse)
                         .at("/DailyForecasts").get(i).at("/Temperature/Maximum/Value").asText();
+                result.add(new WeatherData(
+                        city,
+                        dateValue,
+                        textValue,
+                        tempValue.asDouble()));
             }
-
-            for (int i = 0; i < 5; i++){
-                System.out.println("В городе " + city + " на дату " + dateValues[i] +
-                        " ожидается " + textValues[i] + ", температура: " + tempValues[i]);
-            }
-
         }
+        return result;
     }
 
     public String detectCityKey(String city) throws IOException {
